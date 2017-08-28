@@ -1,0 +1,115 @@
+my-dag {
+  display: block;
+  .jsplumb-endpoint {
+    svg {
+      overflow: visible;
+    }
+    circle {
+      fill: white;
+      r: 2px;
+      stroke-width: 8px;
+    }
+    &-anchor-sourceAnchor circle {
+      stroke: green;
+    }
+    &-anchor-transformAnchor circle {
+      stroke: #2da5e1;
+    }
+    &-anchor-sinkAnchor circle {
+      stroke: orange;
+    }
+  }
+  .diagram-container {
+    position: relative;
+    width: 100%;
+    height: 80vh;
+    background: #eee;
+    overflow: hidden;
+
+    #dag-container {
+      height: inherit;
+      width: inherit;
+      position: absolute;
+      transform-origin: left center;
+
+      .box {
+        position: absolute;
+        width: 100px;
+        height: 50px;
+        cursor: pointer;
+        .jtk-connector { z-index:4; }
+        .jtk-endpoint { z-index:5; }
+        .jtk-overlay { z-index:6; }
+
+        .dag-node {
+          z-index:20;
+          border: 1px solid #2da5e1;
+          box-shadow: 2px 2px 19px #aaa;
+          border-radius: 1em;
+          // opacity: 0.8;
+          width: 110px;
+          height: 50px;
+          line-height: 35px;
+          background: white;
+          font-size: 12px;
+          cursor: pointer;
+          text-align: center;
+          position: absolute;
+          background-color: #eeeeef;
+          color: black;
+          font-family: helvetica, sans-serif;
+          padding: 0.5em;
+          font-size: 0.9em;
+          transition: box-shadow 0.15s ease-in;
+          margin: 0 auto;
+          backgroun-clip: border-box;
+          &:hover {
+              box-shadow: 2px 2px 19px #444;
+              opacity: 0.6;
+          }
+
+          &.source {
+            border: 2px solid green;
+            ~.label {
+              color: green;
+            }
+          }
+          &.transform {
+            border: 2px solid #2da5e1;
+            ~.label {
+              color: #2da5e1;
+            }
+          }
+          &.sink {
+            border: 2px solid orange;
+            ~.label {
+              color: orange;
+            }
+          }
+        }
+        .controllers {
+          width: 100%;
+          position: absolute;
+          text-align: center;
+          left: 6px;
+          top: 50px;
+          .label {
+            width: 50%;
+            float: left;
+          }
+          .deleteLabel{
+            float: left;
+            width: 50%;
+          }
+        }
+      }
+    }
+  }
+
+  .fa.fa-spin.fa-refresh {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+}
