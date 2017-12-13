@@ -28,9 +28,11 @@ export default class Node extends Component {
       name,
     });
   }
-  changename() {
-    this.setState({ changN: true })
 
+  changename() {
+    
+    this.setState({ changN: true })
+   
   }
   inputOnBlur() {
 
@@ -81,9 +83,10 @@ export default class Node extends Component {
             <input
               style={{ display: this.state.changN ? 'inline-block' : 'none', width: '42px' }}
               type="text"
-              autoFocus
+              ref={(input) => {if(input != null){ input.focus();} }}
+              autoFocus={true}
               maxLength={5}
-              className="dis_bottom_input"
+             
               value={this.state.name}
               onBlur={this.inputOnBlur}
               onChange={this.inpueOnChange} />

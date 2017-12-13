@@ -125,6 +125,7 @@
 	    var _this = _possibleConstructorReturn(this, (DAG.__proto__ || Object.getPrototypeOf(DAG)).call(this, props));
 	
 	    _this.props = props;
+	    _this.changeName = _this.changeName.bind(_this);
 	    var data = props.data,
 	        additionalReducersMap = props.additionalReducersMap,
 	        _props$enhancers = props.enhancers,
@@ -341,7 +342,8 @@
 	    value: function addNode(node) {
 	      var type = node.type,
 	          label = node.label,
-	          style = node.style;
+	          style = node.style,
+	          name = node.name;
 	
 	      this.store.dispatch({
 	        type: 'ADD-NODE',
@@ -349,6 +351,7 @@
 	          type: type,
 	          label: label,
 	          style: style,
+	          name: name,
 	          id: type + Date.now().toString().slice(8)
 	        }
 	      });
@@ -371,6 +374,17 @@
 	        type: 'REMOVE-NODE',
 	        payload: {
 	          id: nodeId
+	        }
+	      });
+	    }
+	  }, {
+	    key: 'changeName',
+	    value: function changeName(nodeId, newName) {
+	      this.store.dispatch({
+	        type: 'UPDATE_NAME',
+	        payload: {
+	          id: nodeId,
+	          name: newName
 	        }
 	      });
 	    }
@@ -415,7 +429,7 @@
 	      };
 	      var loadNodes = function loadNodes() {
 	        if (!_this6.state.graph.loading) {
-	          return _react2.default.createElement(_NodesList2.default, { nodes: _this6.state.nodes });
+	          return _react2.default.createElement(_NodesList2.default, { nodes: _this6.state.nodes, changeName: _this6.changeName });
 	        }
 	      };
 	      var getStyles = function getStyles() {
@@ -21098,7 +21112,8 @@
 	        id: _nodeUuid2.default.v4(),
 	        label: action.payload.label,
 	        style: action.payload.style,
-	        type: action.payload.type
+	        type: action.payload.type,
+	        name: action.payload.name
 	      }]);
 	    case 'REMOVE-NODE':
 	      var nodes = state.filter(function (item) {
@@ -21109,6 +21124,14 @@
 	      return state.map(function (node) {
 	        if (node.id === action.payload.nodeId) {
 	          node.style = action.payload.style;
+	          return node;
+	        }
+	        return node;
+	      });
+	    case 'UPDATE_NAME':
+	      return state.map(function (node) {
+	        if (node.id === action.payload.id) {
+	          node.name = action.payload.name;
 	          return node;
 	        }
 	        return node;
@@ -33092,6 +33115,8 @@
 	  }, {
 	    key: 'render',
 	    value: function render() {
+	      var _this2 = this;
+	
 	      return _react2.default.createElement(
 	        'DAG-NodesList',
 	        null,
@@ -33100,7 +33125,9 @@
 	            type: node.type,
 	            label: node.label,
 	            key: node.id,
-	            id: node.id
+	            id: node.id,
+	            name: node.name,
+	            changeName: _this2.props.changeName
 	          });
 	        })
 	      );
@@ -33153,16 +33180,23 @@
 	
 	    var _this = _possibleConstructorReturn(this, (Node.__proto__ || Object.getPrototypeOf(Node)).call(this, props));
 	
+	    _this.changename = _this.changename.bind(_this);
+	    _this.inputOnBlur = _this.inputOnBlur.bind(_this);
+	    _this.inpueOnChange = _this.inpueOnChange.bind(_this);
+	    _this.changeCname = _this.changeCname.bind(_this);
 	    var style = props.style,
 	        type = props.type,
 	        label = props.label,
-	        id = props.id;
+	        id = props.id,
+	        name = props.name;
 	
 	    _this.state = {
 	      style: style,
 	      type: type,
 	      label: label,
-	      id: id
+	      id: id,
+	      name: name,
+	      changN: false
 	    };
 	    return _this;
 	  }
@@ -33173,18 +33207,67 @@
 	      var style = newProps.style,
 	          type = newProps.type,
 	          label = newProps.label,
-	          id = newProps.id;
+	          id = newProps.id,
+	          name = newProps.name;
 	
 	      this.setState({
 	        style: style,
 	        type: type,
 	        label: label,
-	        id: id
+	        id: id,
+	        name: name
 	      });
+	    }
+	  }, {
+	    key: 'changename',
+	    value: function changename() {
+	
+	      this.setState({ changN: true });
+	    }
+	  }, {
+	    key: 'inputOnBlur',
+	    value: function inputOnBlur() {
+	
+	      this.props.changeName(this.state.id, this.state.name);
+	      this.setState({ changN: false });
+	    }
+	  }, {
+	    key: 'inpueOnChange',
+	    value: function inpueOnChange(e) {
+	      this.setState({ name: e.target.value });
+	    }
+	  }, {
+	    key: 'changeCname',
+	    value: function changeCname() {
+	      var name = '';
+	      switch (this.state.label) {
+	        case 'APP':
+	          name = 'node-app';
+	          break;
+	        case '任务':
+	          name = 'node-task';
+	          break;
+	        case '事件':
+	          name = 'node-event';
+	          break;
+	        case '函数':
+	          name = 'node-func';
+	          break;
+	        case '变量':
+	          name = 'node-var';
+	          break;
+	        default:
+	          name = '';
+	      }
+	      return name;
 	    }
 	  }, {
 	    key: 'render',
 	    value: function render() {
+	      var _classnames,
+	          _this2 = this;
+	
+	      var classN = this.changeCname();
 	      return _react2.default.createElement(
 	        'DAG-Node',
 	        null,
@@ -33195,10 +33278,45 @@
 	            style: this.state.style },
 	          _react2.default.createElement(
 	            'div',
-	            { className: (0, _classname2.default)(_defineProperty({ 'dag-node': true }, this.state.type, true)) },
-	            this.state.label
+	            { className: (0, _classname2.default)((_classnames = { 'dag-node': true }, _defineProperty(_classnames, classN, true), _defineProperty(_classnames, this.state.type, true), _classnames)) },
+	            function () {
+	              switch (_this2.state.label) {
+	                case 'APP':
+	                  return _react2.default.createElement('span', { style: { display: _this2.state.name ? 'none' : 'inline-block' }, className: 'ico-app' });
+	                case '任务':
+	                  return _react2.default.createElement('span', { style: { display: _this2.state.name ? 'none' : 'inline-block' }, className: 'ico-task' });
+	                case '事件':
+	                  return _react2.default.createElement('span', { style: { display: _this2.state.name ? 'none' : 'inline-block' }, className: 'ico-event' });
+	                case '函数':
+	                  return _react2.default.createElement('span', { style: { display: _this2.state.name ? 'none' : 'inline-block' }, className: 'ico-func' });
+	                case '变量':
+	                  return _react2.default.createElement('span', { style: { display: _this2.state.name ? 'none' : 'inline-block' }, className: 'ico-var' });
+	              }
+	            }(),
+	            '\xA0',
+	            _react2.default.createElement(
+	              'span',
+	              { onDoubleClick: this.changename,
+	                style: { display: this.state.changN ? 'none' : 'inline-block' }
+	              },
+	              this.state.name || this.state.label
+	            ),
+	            _react2.default.createElement('input', {
+	              style: { display: this.state.changN ? 'inline-block' : 'none', width: '42px' },
+	              type: 'text',
+	              ref: function ref(input) {
+	                if (input != null) {
+	                  input.focus();
+	                }
+	              },
+	              autoFocus: true,
+	              maxLength: 5,
+	
+	              value: this.state.name,
+	              onBlur: this.inputOnBlur,
+	              onChange: this.inpueOnChange })
 	          ),
-	          this.state.id === '000000000' || this.state.id === '99999999' ? '' : _react2.default.createElement(
+	          this.state.id === '000000000' || this.state.id === '99999999' || this.state.id === '111111111' || this.state.id === '888888888' ? '' : _react2.default.createElement(
 	            'div',
 	            { className: 'controllers' },
 	            _react2.default.createElement(
@@ -33395,7 +33513,7 @@
 	
 	
 	// module
-	exports.push([module.id, "my-dag {\n  display: block;\n}\nmy-dag .jsplumb-endpoint svg {\n  overflow: visible;\n}\nmy-dag .jsplumb-endpoint circle {\n  fill: white;\n  r: 2px;\n  stroke-width: 8px;\n}\nmy-dag .jsplumb-endpoint-anchor-sourceAnchor circle {\n  stroke: green;\n}\nmy-dag .jsplumb-endpoint-anchor-transformAnchor circle {\n  stroke: #2da5e1;\n}\nmy-dag .jsplumb-endpoint-anchor-sinkAnchor circle {\n  stroke: orange;\n}\nmy-dag .diagram-container {\n  position: relative;\n  width: 100%;\n  height: 80vh;\n  background: #eee;\n  overflow: hidden;\n}\nmy-dag .diagram-container #dag-container {\n  height: inherit;\n  width: inherit;\n  position: absolute;\n  transform-origin: left center;\n}\nmy-dag .diagram-container #dag-container .box {\n  position: absolute;\n  width: 100px;\n  height: 50px;\n  cursor: pointer;\n}\nmy-dag .diagram-container #dag-container .box .jtk-connector {\n  z-index: 4;\n}\nmy-dag .diagram-container #dag-container .box .jtk-endpoint {\n  z-index: 5;\n}\nmy-dag .diagram-container #dag-container .box .jtk-overlay {\n  z-index: 6;\n}\nmy-dag .diagram-container #dag-container .box .dag-node {\n  z-index: 20;\n  border: 1px solid #2da5e1;\n  box-shadow: 2px 2px 19px #aaa;\n  border-radius: 1em;\n  width: 110px;\n  height: 50px;\n  line-height: 35px;\n  background: white;\n  font-size: 12px;\n  cursor: pointer;\n  text-align: center;\n  position: absolute;\n  background-color: #eeeeef;\n  color: black;\n  font-family: helvetica, sans-serif;\n  padding: 0.5em;\n  font-size: 0.9em;\n  transition: box-shadow 0.15s ease-in;\n  margin: 0 auto;\n  backgroun-clip: border-box;\n}\nmy-dag .diagram-container #dag-container .box .dag-node:hover {\n  box-shadow: 2px 2px 19px #444;\n  opacity: 0.6;\n}\nmy-dag .diagram-container #dag-container .box .dag-node.source {\n  border: 2px solid green;\n}\nmy-dag .diagram-container #dag-container .box .dag-node.source ~ .label {\n  color: green;\n}\nmy-dag .diagram-container #dag-container .box .dag-node.transform {\n  border: 2px solid #2da5e1;\n}\nmy-dag .diagram-container #dag-container .box .dag-node.transform ~ .label {\n  color: #2da5e1;\n}\nmy-dag .diagram-container #dag-container .box .dag-node.sink {\n  border: 2px solid orange;\n}\nmy-dag .diagram-container #dag-container .box .dag-node.sink ~ .label {\n  color: orange;\n}\nmy-dag .diagram-container #dag-container .box .controllers {\n  width: 100%;\n  position: absolute;\n  text-align: center;\n  left: 6px;\n  top: 50px;\n}\nmy-dag .diagram-container #dag-container .box .controllers .label {\n  width: 50%;\n  float: left;\n}\nmy-dag .diagram-container #dag-container .box .controllers .deleteLabel {\n  float: left;\n  width: 50%;\n}\nmy-dag .fa.fa-spin.fa-refresh {\n  position: absolute;\n  left: 50%;\n  top: 50%;\n  transform: translate(-50%, -50%);\n}\n", ""]);
+	exports.push([module.id, "my-dag {\n  display: block;\n}\nmy-dag .jsplumb-endpoint svg {\n  overflow: visible;\n}\nmy-dag .jsplumb-endpoint circle {\n  fill: white;\n  r: 2px;\n  stroke-width: 8px;\n}\nmy-dag .jsplumb-endpoint-anchor-sourceAnchor circle {\n  stroke: green;\n}\nmy-dag .jsplumb-endpoint-anchor-transformAnchor circle {\n  stroke: #2da5e1;\n}\nmy-dag .jsplumb-endpoint-anchor-sinkAnchor circle {\n  stroke: orange;\n}\nmy-dag .diagram-container {\n  position: relative;\n  width: 100%;\n  height: 80vh;\n  background: #eee;\n  overflow: hidden;\n}\nmy-dag .diagram-container #dag-container {\n  height: inherit;\n  width: inherit;\n  position: absolute;\n  transform-origin: left center;\n}\nmy-dag .diagram-container #dag-container .box {\n  position: absolute;\n  width: 90px;\n  height: 50px;\n  cursor: pointer;\n}\nmy-dag .diagram-container #dag-container .box .jtk-connector {\n  z-index: 4;\n}\nmy-dag .diagram-container #dag-container .box .jtk-endpoint {\n  z-index: 5;\n}\nmy-dag .diagram-container #dag-container .box .jtk-overlay {\n  z-index: 6;\n}\nmy-dag .diagram-container #dag-container .box .dag-node {\n  z-index: 20;\n  border: 1px solid #2da5e1;\n  box-shadow: 2px 2px 19px #aaa;\n  border-radius: 1em;\n  width: 110px;\n  height: 50px;\n  line-height: 35px;\n  background: white;\n  font-size: 12px;\n  cursor: pointer;\n  text-align: center;\n  position: absolute;\n  background-color: #eeeeef;\n  color: black;\n  font-family: helvetica, sans-serif;\n  padding: 0.5em;\n  font-size: 0.9em;\n  transition: box-shadow 0.15s ease-in;\n  margin: 0 auto;\n  backgroun-clip: border-box;\n}\nmy-dag .diagram-container #dag-container .box .dag-node:hover {\n  box-shadow: 2px 2px 19px #444;\n  opacity: 0.6;\n}\nmy-dag .diagram-container #dag-container .box .dag-node.source {\n  border: 2px solid green;\n}\nmy-dag .diagram-container #dag-container .box .dag-node.source ~ .label {\n  color: green;\n}\nmy-dag .diagram-container #dag-container .box .dag-node.node-task {\n  border: 2px solid #F8931F;\n}\nmy-dag .diagram-container #dag-container .box .dag-node.node-task ~ .label {\n  color: #2da5e1;\n}\nmy-dag .diagram-container #dag-container .box .dag-node.node-event {\n  border: 2px solid #C69B6E;\n}\nmy-dag .diagram-container #dag-container .box .dag-node.node-event ~ .label {\n  color: #2da5e1;\n}\nmy-dag .diagram-container #dag-container .box .dag-node.node-func {\n  border: 2px solid #2aabe4;\n}\nmy-dag .diagram-container #dag-container .box .dag-node.node-func ~ .label {\n  color: #2da5e1;\n}\nmy-dag .diagram-container #dag-container .box .dag-node.node-var {\n  border: 2px solid #23b574;\n}\nmy-dag .diagram-container #dag-container .box .dag-node.node-var ~ .label {\n  color: #2da5e1;\n}\nmy-dag .diagram-container #dag-container .box .dag-node.sink {\n  border: 2px solid orange;\n}\nmy-dag .diagram-container #dag-container .box .dag-node.sink ~ .label {\n  color: orange;\n}\nmy-dag .diagram-container #dag-container .box .controllers {\n  width: 100%;\n  position: absolute;\n  text-align: center;\n  left: 6px;\n  top: 40px;\n}\nmy-dag .diagram-container #dag-container .box .controllers .label {\n  width: 50%;\n  float: left;\n}\nmy-dag .diagram-container #dag-container .box .controllers .deleteLabel {\n  float: left;\n  width: 50%;\n}\nmy-dag .fa.fa-spin.fa-refresh {\n  position: absolute;\n  left: 50%;\n  top: 50%;\n  transform: translate(-50%, -50%);\n}\n", ""]);
 	
 	// exports
 
