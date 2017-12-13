@@ -74,8 +74,32 @@ my-dag {
               color: green;
             }
           }
-          &.transform {
-            border: 2px solid #2da5e1;
+          // &.transform {
+          //   border: 2px solid #2da5e1;
+          //   ~.label {
+          //     color: #2da5e1;
+          //   }
+          // }
+          &.node-task {
+            border: 2px solid #F8931F;
+            ~.label {
+              color: #2da5e1;
+            }
+          }
+          &.node-event {
+            border: 2px solid #C69B6E;
+            ~.label {
+              color: #2da5e1;
+            }
+          }
+          &.node-func {
+            border: 2px solid #2aabe4;
+            ~.label {
+              color: #2da5e1;
+            }
+          } 
+          &.node-var {
+            border: 2px solid #23b574;
             ~.label {
               color: #2da5e1;
             }

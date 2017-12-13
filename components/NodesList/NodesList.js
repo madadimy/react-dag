@@ -30,6 +30,8 @@ export default class NodesList extends Component {
                   label={node.label}
                   key={node.id}
                   id={node.id}
+                  name={node.name}
+                  changeName={this.props.changeName}
                 />
               )
             })

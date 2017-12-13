@@ -10,7 +10,8 @@ let nodes = (state = [], action = {}) => {
           id: uuid.v4(),
           label: action.payload.label,
           style: action.payload.style,
-          type: action.payload.type
+          type: action.payload.type,
+          name: action.payload.name,
         }
       ];
     case 'REMOVE-NODE':
@@ -26,6 +27,14 @@ let nodes = (state = [], action = {}) => {
         }
         return node;
       });
+    case 'UPDATE_NAME':
+    return state.map(node => {
+      if (node.id === action.payload.id) {
+        node.name = action.payload.name;
+        return node;
+      }
+      return node;
+    });
     case 'RESET':
       return [];
     default:

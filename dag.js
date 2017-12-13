@@ -15,6 +15,7 @@ export class DAG extends Component {
   constructor(props) {
     super(props);
     this.props = props;
+    this.changeName=this.changeName.bind(this)
     let {data, additionalReducersMap, enhancers = [], middlewares = []} = props;
     this.store = configureStore(
       data,
@@ -187,13 +188,14 @@ export class DAG extends Component {
     }, 600);
   }
   addNode(node) {
-    let {type, label, style} = node;
+    let {type, label, style,name} = node;
     this.store.dispatch({
       type: 'ADD-NODE',
       payload: {
         type,
         label,
         style,
+        name:name,
         id: type + Date.now().toString().slice(8)
       }
     });
@@ -212,6 +214,15 @@ export class DAG extends Component {
       type: 'REMOVE-NODE',
       payload: {
         id: nodeId
+      }
+    });
+  }
+  changeName(nodeId,newName) {
+    this.store.dispatch({
+      type: 'UPDATE_NAME',
+      payload: {
+        id: nodeId,
+        name:newName,
       }
     });
   }
@@ -248,7 +259,7 @@ export class DAG extends Component {
     const loadNodes = () => {
       if (!this.state.graph.loading) {
         return (
-          <NodesList nodes={this.state.nodes}/>
+          <NodesList nodes={this.state.nodes} changeName={this.changeName}/>
         );
       }
     };
