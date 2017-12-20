@@ -99,6 +99,7 @@ export class DAG extends Component {
       });
   }
   saveChange(obj, connections) {
+   
 	if(typeof obj.props.handleChange === "function") {
 	//	let json = {};
 	//	json.id = info.sourceId + '-' + info.targetId;
@@ -110,7 +111,8 @@ export class DAG extends Component {
 		let data = obj.props.data;
 		data.nodes = obj.store.getState().nodes;
 		data.connections = connections;
-		obj.props.handleChange(data);
+    obj.props.handleChange(data);
+    
 	  }
   }
   renderConnections() {
@@ -121,8 +123,14 @@ export class DAG extends Component {
           to: conn.targetId
         })
       );
-    let {nodes, connections} = this.store.getState();//console.log('---nodes---');console.dir(nodes);console.log('---connections---');console.dir(connections);
-    if (connections.length === connectionsFromInstance.length) { return; }
+    let { nodes, connections } = this.store.getState();
+   
+    if (connections.length === connectionsFromInstance.length) {
+      if (connections.length == 0) {
+        	this.saveChange(this, []);
+      }
+      return;
+    }
     connections
       .forEach( connection => {
         var sourceNode = nodes.find( node => node.id === connection.from);
