@@ -48,7 +48,8 @@ const connections = (state = [], action = {}) => {
         ...state,
         {
           from: action.connection.from,
-          to: action.connection.to
+          to: action.connection.to,
+          label:action.connection.label
         }
       ];
     case 'REMOVE-CONNECTION':
@@ -58,6 +59,14 @@ const connections = (state = [], action = {}) => {
       return nodes;
     case 'SET-CONNECTIONS':
       return [...action.payload.connections];
+    case 'SET-LABLE':
+      return state.map((item) => {
+        if (item.from === action.payload.from && item.to === action.payload.to) {
+          item.label = action.payload.label;
+          return item;
+        }
+        return item;
+      })
     case 'RESET':
       return [];
     default:

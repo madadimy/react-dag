@@ -1,7 +1,7 @@
-import React , { Component } from 'react';
+import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
-import {configureStore} from './dag-store';
-import {getSettings} from './dag-settings';
+import { configureStore } from './dag-store';
+import { getSettings } from './dag-settings';
 import uuid from 'node-uuid';
 
 import NodesList from './components/NodesList/NodesList';
@@ -15,8 +15,8 @@ export class DAG extends Component {
   constructor(props) {
     super(props);
     this.props = props;
-    this.changeName=this.changeName.bind(this)
-    let {data, additionalReducersMap, enhancers = [], middlewares = []} = props;
+    this.changeName = this.changeName.bind(this)
+    let { data, additionalReducersMap, enhancers = [], middlewares = [] } = props;
     this.store = configureStore(
       data,
       additionalReducersMap,
@@ -33,7 +33,7 @@ export class DAG extends Component {
     } else {
       this.settings = getSettings();
     }
-    this.store.subscribe( () => {
+    this.store.subscribe(() => {
       this.setState(this.store.getState());
       setTimeout(this.renderGraph.bind(this));
     });
@@ -63,7 +63,7 @@ export class DAG extends Component {
   makeNodesDraggable() {
     let nodes = document.querySelectorAll('#dag-container .box');
     this.instance.draggable(nodes, {
-      start: () => { console.log('Starting to drag')},
+      start: () => { console.log('Starting to drag') },
       stop: (dragEndEvent) => {
         this.store.dispatch({
           type: 'UPDATE_NODE',
@@ -84,75 +84,88 @@ export class DAG extends Component {
     let connections = this.instance
       .getConnections()
       .map(conn => ({
-          from: conn.sourceId,
-          to: conn.targetId
-        })
-      );
-	//send ajax when onConnect
-	//this.saveChange(this, connections);
+        from: conn.sourceId,
+        to: conn.targetId,
 
-      this.store.dispatch({
-        type: 'SET-CONNECTIONS',
-        payload: {
-          connections
-        }
-      });
+      })
+
+      );
+   
+    //send ajax when onConnect
+    //this.saveChange(this, connections);
+
+    this.store.dispatch({
+      type: 'SET-CONNECTIONS',
+      payload: {
+        connections
+      }
+    });
   }
   saveChange(obj, connections) {
-   
-	if(typeof obj.props.handleChange === "function") {
-	//	let json = {};
-	//	json.id = info.sourceId + '-' + info.targetId;
-	//	json.start_block_id = info.sourceId;
-	//	json.end_block_id = info.targetId;
-	//	json.conditions = '[]';
-	//	this.props.onConnect(json);
-	//console.dir(this.props.data);
-		let data = obj.props.data;
-		data.nodes = obj.store.getState().nodes;
-		data.connections = connections;
-    obj.props.handleChange(data);
-    
-	  }
+
+    if (typeof obj.props.handleChange === "function") {
+      //	let json = {};
+      //	json.id = info.sourceId + '-' + info.targetId;
+      //	json.start_block_id = info.sourceId;
+      //	json.end_block_id = info.targetId;
+      //	json.conditions = '[]';
+      //	this.props.onConnect(json);
+      //console.dir(this.props.data);
+      let data = obj.props.data;
+      data.nodes = obj.store.getState().nodes;
+      data.connections = connections;
+      obj.props.handleChange(data);
+
+    }
   }
   renderConnections() {
+   
     let connectionsFromInstance = this.instance
       .getConnections()
-      .map( conn => ({
-          from: conn.sourceId,
-          to: conn.targetId
-        })
+      .map(conn => ({
+        from: conn.sourceId,
+        to: conn.targetId
+      })
       );
     let { nodes, connections } = this.store.getState();
-   
+
     if (connections.length === connectionsFromInstance.length) {
+      //not connections  save node
       if (connections.length == 0) {
-        	this.saveChange(this, []);
+        this.saveChange(this, []);
       }
       return;
     }
+   
     connections
-      .forEach( connection => {
-        var sourceNode = nodes.find( node => node.id === connection.from);
-        var targetNode = nodes.find( node => node.id === connection.to);
-	if(sourceNode && targetNode) {
+      .forEach(connection => {
+        var sourceNode = nodes.find(node => node.id === connection.from);
+        var targetNode = nodes.find(node => node.id === connection.to);
+        var label = connection.label?connection.label:'';
+        if (sourceNode && targetNode) {
           var sourceId = sourceNode.type === 'transform' ? 'Left' + connection.from : connection.from;
           var targetId = targetNode.type === 'transform' ? 'Right' + connection.to : connection.to;
           var connObj = {
             uuids: [sourceId, targetId],
-            detachable: true
+            detachable: true,
+            overlays: [ ["Label", { label: label,  location: 0.65,class: 'myLabel' ,id:'myLabel' }]]
+  
           };
           this.instance.connect(connObj);
+
         }
       });
-		connectionsFromInstance = this.instance
-		  .getConnections()
-		  .map( conn => ({
-			  from: conn.sourceId,
-			  to: conn.targetId
-			})
-		  );
-		this.saveChange(this, connectionsFromInstance);
+    connectionsFromInstance = this.instance
+      .getConnections()
+      .map(conn => ({
+        from: conn.sourceId,
+        to: conn.targetId,
+        label:conn.getOverlay("myLabel")?conn.getOverlay("myLabel").getLabel():'',
+      })
+      );
+    this.saveChange(this, connectionsFromInstance);
+    
+
   }
   addEndpoints() {
     let nodes = this.store.getState().nodes;
@@ -161,33 +174,33 @@ export class DAG extends Component {
       return nodesId.indexOf(endpoint) !== -1
     });
     //Don't delete endpoints when dragged
-    if(window.isNodeDrag) {
-	window.isNodeDrag = false;
+    if (window.isNodeDrag) {
+      window.isNodeDrag = false;
     } else {
-    	this.instance.deleteEveryEndpoint();
+      this.instance.deleteEveryEndpoint();
     }
     this.instance.detachEveryConnection();
 
     nodes.forEach(node => {
       let type = node.type;
-      switch(type) {
+      switch (type) {
         case 'source':
-          this.instance.addEndpoint(node.id, this.settings.source, {uuid: node.id});
+          this.instance.addEndpoint(node.id, this.settings.source, { uuid: node.id });
           return;
         case 'sink':
-          this.instance.addEndpoint(node.id, this.settings.sink, {uuid: node.id});
+          this.instance.addEndpoint(node.id, this.settings.sink, { uuid: node.id });
           return;
         default:
-          this.instance.addEndpoint(node.id, this.settings.transformSource, {uuid: `Left${node.id}`});
-          this.instance.addEndpoint(node.id, this.settings.transformSink, {uuid: `Right${node.id}`});
+          this.instance.addEndpoint(node.id, this.settings.transformSource, { uuid: `Left${node.id}` });
+          this.instance.addEndpoint(node.id, this.settings.transformSink, { uuid: `Right${node.id}` });
       }
     });
   }
   componentDidMount() {
     this.setState(this.store.getState());
     // Because html id needs to start with a character
-    this.setState({componentId: 'A' + uuid.v4()});
-    setTimeout( () => {
+    this.setState({ componentId: 'A' + uuid.v4() });
+    setTimeout(() => {
       this.toggleLoading(false);
       if (Object.keys(this.props.data || {}).length) {
         this.renderGraph();
@@ -196,24 +209,34 @@ export class DAG extends Component {
     }, 600);
   }
   addNode(node) {
-    let {type, label, style,name} = node;
+    let { type, label, style, name } = node;
     this.store.dispatch({
       type: 'ADD-NODE',
       payload: {
         type,
         label,
         style,
-        name:name,
+        name: name,
         id: type + Date.now().toString().slice(8)
       }
     });
   }
-  removeConnection(sourceid, targetid){
+  removeConnection(sourceid, targetid) {
     this.store.dispatch({
       type: 'REMOVE-CONNECTION',
       payload: {
         from: sourceid,
         to: targetid
+      }
+    });
+  }
+  addConnectionLable(sourceid, targetid, label) {
+    this.store.dispatch({
+      type: 'SET-LABLE',
+      payload: {
+        from: sourceid,
+        to: targetid,
+        label: label,
       }
     });
   }
@@ -225,20 +248,20 @@ export class DAG extends Component {
       }
     });
   }
-  changeName(nodeId,newName) {
+  changeName(nodeId, newName) {
     this.store.dispatch({
       type: 'UPDATE_NAME',
       payload: {
         id: nodeId,
-        name:newName,
+        name: newName,
       }
     });
   }
   cleanUpGraph() {
-    let {nodes, connections} = this.store.getState();
+    let { nodes, connections } = this.store.getState();
     this.store.dispatch({
       type: 'CLEANUP-GRAPH',
-      payload: {nodes, connections}
+      payload: { nodes, connections }
     });
 
     this.store.dispatch({
@@ -267,13 +290,13 @@ export class DAG extends Component {
     const loadNodes = () => {
       if (!this.state.graph.loading) {
         return (
-          <NodesList nodes={this.state.nodes} changeName={this.changeName}/>
+          <NodesList nodes={this.state.nodes} changeName={this.changeName} />
         );
       }
     };
     const getStyles = () => {
       let style = {
-        transform : ''
+        transform: ''
       };
       if (this.state.graph.scale) {
         style.transform += `scale(${this.state.graph.scale})`;
