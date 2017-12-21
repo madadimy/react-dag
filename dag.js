@@ -86,6 +86,7 @@ export class DAG extends Component {
       .map(conn => ({
         from: conn.sourceId,
         to: conn.targetId,
+        label:conn.getOverlay("myLabel")?conn.getOverlay("myLabel").getLabel():'',
 
       })
 
