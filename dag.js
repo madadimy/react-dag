@@ -15,7 +15,8 @@ export class DAG extends Component {
   constructor(props) {
     super(props);
     this.props = props;
-    this.changeName = this.changeName.bind(this)
+    this.changeName = this.changeName.bind(this);
+    this.changeLine = this.changeLine.bind(this);
     let { data, additionalReducersMap, enhancers = [], middlewares = [] } = props;
     this.store = configureStore(
       data,
@@ -80,6 +81,7 @@ export class DAG extends Component {
     });
   }
   makeConnections(info, originalEvent) {
+   
     if (!originalEvent) { return; }
     let connections = this.instance
       .getConnections()
@@ -101,6 +103,21 @@ export class DAG extends Component {
         connections
       }
     });
+    //changline
+    if (info.connection.suspendedElementId){
+      let line = {
+        oldTargetId: info.connection.suspendedElementId,
+        sourceId: info.sourceId,
+        targetId:info.targetId,
+
+      }
+      this.changeLine(this,line)
+    }
+  }
+  changeLine(obj,line) {
+    if (typeof obj.props.changeLine === 'function') {
+      obj.props.changeLine(line);
+    }
   }
   saveChange(obj, connections) {
 
@@ -120,7 +137,7 @@ export class DAG extends Component {
     }
   }
   renderConnections() {
-   
+  
     let connectionsFromInstance = this.instance
       .getConnections()
       .map(conn => ({
@@ -223,6 +240,7 @@ export class DAG extends Component {
     });
   }
   removeConnection(sourceid, targetid) {
+     
     this.store.dispatch({
       type: 'REMOVE-CONNECTION',
       payload: {
@@ -232,6 +250,7 @@ export class DAG extends Component {
     });
   }
   addConnectionLable(sourceid, targetid, label) {
+ 
     this.store.dispatch({
       type: 'SET-LABLE',
       payload: {
