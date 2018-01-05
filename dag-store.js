@@ -1,5 +1,5 @@
 import {combineReducers, createStore, applyMiddleware, compose} from 'redux';
-import uuid from 'node-uuid';
+import uuid from 'uuid/v4';
 
 let nodes = (state = [], action = {}) => {
   switch(action.type) {
@@ -7,7 +7,7 @@ let nodes = (state = [], action = {}) => {
       return [
         ...state,
         {
-          id: uuid.v4(),
+          id: uuid(),
           label: action.payload.label,
           style: action.payload.style,
           type: action.payload.type,

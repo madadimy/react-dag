@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
 import { configureStore } from './dag-store';
 import { getSettings } from './dag-settings';
-import uuid from 'node-uuid';
+import uuid from 'uuid/v4';
 
 import NodesList from './components/NodesList/NodesList';
 
@@ -217,7 +217,7 @@ export class DAG extends Component {
   componentDidMount() {
     this.setState(this.store.getState());
     // Because html id needs to start with a character
-    this.setState({ componentId: 'A' + uuid.v4() });
+    this.setState({ componentId: 'A' + uuid() });
     setTimeout(() => {
       this.toggleLoading(false);
       if (Object.keys(this.props.data || {}).length) {
