@@ -23,6 +23,7 @@ let nodes = (state = [], action = {}) => {
       return state.map(node => {
         if (node.id === action.payload.nodeId) {
           node.style = action.payload.style;
+          // console.log(node.style)
           return node;
         }
         return node;
@@ -47,6 +48,8 @@ const connections = (state = [], action = {}) => {
       return [
         ...state,
         {
+          out: action.connection.out,
+          in:action.connection.in,
           from: action.connection.from,
           to: action.connection.to,
           label:action.connection.label

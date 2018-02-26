@@ -3,20 +3,20 @@ import ReactDOM from 'react-dom';
 import { configureStore } from './dag-store';
 import { getSettings } from './dag-settings';
 import uuid from 'uuid/v4';
-
-import NodesList from './components/NodesList/NodesList';
-
+import NodesList from './components/NodesList/NodesList'
 require('./styles/dag.less');
 var jsPlumb = require('jsplumb');
-
 var classnames = require('classname');
-
+let dragStart = '';
+let dragEnd = '';
 export class DAG extends Component {
   constructor(props) {
     super(props);
     this.props = props;
     this.changeName = this.changeName.bind(this);
     this.changeLine = this.changeLine.bind(this);
+    this.openLine = this.openLine.bind(this);
+    this.openNode = this.openNode.bind(this);
     let { data, additionalReducersMap, enhancers = [], middlewares = [] } = props;
     this.store = configureStore(
       data,
@@ -24,7 +24,8 @@ export class DAG extends Component {
       [...middlewares],
       [...enhancers]
     );
-    this.state = this.store.getState();
+
+    this.state = Object.assign({}, this.store.getState(), { show: true });
     if (props.data) {
       this.toggleLoading(true);
     }
@@ -40,12 +41,33 @@ export class DAG extends Component {
     });
 
     jsPlumb.ready(() => {
+      let that = this
       let dagSettings = this.settings.default;
       let container = document.querySelector(`${this.state.componentId} #dag-container`);
       jsPlumb.setContainer(container);
       this.instance = jsPlumb.getInstance(dagSettings);
       this.instance.bind('connection', this.makeConnections.bind(this));
       this.instance.bind('connectionDetached', this.makeConnections.bind(this));
+      this.instance.bind('click', function (e) {
+
+        that.openLine(e, 'open')
+
+      })
+      this.instance.bind('dblclick', function (e) {
+
+        that.openLine(e, 'del')
+      })
+      this.instance.bind('mouseover', function (e) {
+        e.setType("bar")
+      })
+      this.instance.bind('mouseout', function (e) {
+        e.setType("foo")
+      })
+      this.instance.registerConnectionTypes({
+        "foo": { paintStyle: { stroke: '#2da5e2', strokeWidth: 2, radius: 5, lineWidth: 2 } },
+        "bar": { paintStyle: { stroke: '#156086', strokeWidth: 2, radius: 5, lineWidth: 2 } },
+
+      });
     });
   }
   toggleLoading(loading) {
@@ -61,40 +83,84 @@ export class DAG extends Component {
     this.makeNodesDraggable();
     this.renderConnections();
   }
+
   makeNodesDraggable() {
     let nodes = document.querySelectorAll('#dag-container .box');
     this.instance.draggable(nodes, {
-      start: () => { console.log('Starting to drag') },
+      start: (nodes) => {
+        // this.setState({show:false })
+        dragStart = new Date().getTime()
+        // console.log('Starting to drag')
+
+      },
       stop: (dragEndEvent) => {
+        dragEnd = new Date().getTime()
+        //  console.log('End to drag')
+        //  console.log(dragEndEvent.el.style.top,dragEndEvent.el.style.left)
+
         this.store.dispatch({
           type: 'UPDATE_NODE',
           payload: {
             nodeId: dragEndEvent.el.id,
             style: {
-              top: dragEndEvent.el.style.top,
-              left: dragEndEvent.el.style.left
+              top: Math.round(parseInt(dragEndEvent.el.style.top) / 40) * 40 + 'px',
+              left: Math.round(parseInt(dragEndEvent.el.style.left) / 80) * 80 + 'px',
             }
           }
         });
         this.instance.repaintEverything();
+
+
       }
     });
   }
   makeConnections(info, originalEvent) {
-   
+
+
     if (!originalEvent) { return; }
+    console.log('make', info, originalEvent)
+    console.log('make', info.sourceEndpoint.anchor)
+    let formpoint = info.sourceEndpoint.anchor.anchors.filter((point) => {
+      if (info.sourceEndpoint.anchor.x === point.x) {
+        return true
+      } else {
+        return false
+      }
+
+    })
+    // let topoint =info.targetEndpoint
+    console.log(formpoint)
     let connections = this.instance
       .getConnections()
-      .map(conn => ({
-        from: conn.sourceId,
-        to: conn.targetId,
-        label:conn.getOverlay("myLabel")?conn.getOverlay("myLabel").getLabel():'',
+      .map((conn) => {
+        let formpoint = conn.endpoints[0].anchor.anchors.filter((point) => {
+          if (conn.endpoints[0].anchor.x === point.x) {
+            return true
+          } else {
+            return false
+          }
 
-      })
+        })
+        let topoint = conn.endpoints[1].anchor.anchors.filter((point) => {
+          if (conn.endpoints[1].anchor.x === point.x) {
+            return true
+          } else {
+            return false
+          }
 
-      );
-   
-    //send ajax when onConnect
+        })
+        console.log(formpoint[0].type, topoint[0].type)
+        return {
+          out: formpoint[0].type,
+          in: topoint[0].type,
+          from: conn.sourceId,
+          to: conn.targetId,
+          label: conn.getOverlay("myLabel") ? conn.getOverlay("myLabel").getLabel() : '',
+        }
+      });
+    console.log('makeline', this.instance.getConnections()[0].endpoints[0].anchor)
+
+    //send ajax when onConnect getEndpoint
     //this.saveChange(this, connections);
 
     this.store.dispatch({
@@ -104,17 +170,17 @@ export class DAG extends Component {
       }
     });
     //changline
-    if (info.connection.suspendedElementId){
+    if (info.connection.suspendedElementId) {
       let line = {
         oldTargetId: info.connection.suspendedElementId,
         sourceId: info.sourceId,
-        targetId:info.targetId,
+        targetId: info.targetId,
 
       }
-      this.changeLine(this,line)
+      this.changeLine(this, line)
     }
   }
-  changeLine(obj,line) {
+  changeLine(obj, line) {
     if (typeof obj.props.changeLine === 'function') {
       obj.props.changeLine(line);
     }
@@ -137,7 +203,7 @@ export class DAG extends Component {
     }
   }
   renderConnections() {
-  
+    let that = this;
     let connectionsFromInstance = this.instance
       .getConnections()
       .map(conn => ({
@@ -146,7 +212,8 @@ export class DAG extends Component {
       })
       );
     let { nodes, connections } = this.store.getState();
-
+    console.log('line', connections)
+    console.log('node', nodes)
     if (connections.length === connectionsFromInstance.length) {
       //not connections  save node
       if (connections.length == 0) {
@@ -154,36 +221,60 @@ export class DAG extends Component {
       }
       return;
     }
-   
+
     connections
       .forEach(connection => {
         var sourceNode = nodes.find(node => node.id === connection.from);
         var targetNode = nodes.find(node => node.id === connection.to);
-        var label = connection.label?connection.label:'';
+        var label = connection.label ? connection.label : '';
         if (sourceNode && targetNode) {
-          var sourceId = sourceNode.type === 'transform' ? 'Left' + connection.from : connection.from;
-          var targetId = targetNode.type === 'transform' ? 'Right' + connection.to : connection.to;
+          var sourceId = sourceNode.type === 'transform' ? connection.out + connection.from :  'out'+connection.from;
+          var targetId = targetNode.type === 'transform' ? connection.in + connection.to : 'in'+connection.to;
           var connObj = {
             uuids: [sourceId, targetId],
             detachable: true,
-            overlays: [ ["Label", { label: label,  location: 0.65,class: 'myLabel' ,id:'myLabel' }]]
-  
+            overlays: [["Label", { label: label, location: 0.65, class: 'myLabel', id: 'myLabel' }]],
+            hoverPaintStyle: { strokeStyle: "red" },
+            paintStyle: { stroke: "blue", strokeWidth: 10 },
+            type: "foo"
           };
           this.instance.connect(connObj);
+
 
         }
       });
     connectionsFromInstance = this.instance
       .getConnections()
-      .map(conn => ({
-        from: conn.sourceId,
-        to: conn.targetId,
-        label:conn.getOverlay("myLabel")?conn.getOverlay("myLabel").getLabel():'',
-      })
-      );
-    this.saveChange(this, connectionsFromInstance);
-    
+      .map((conn) => {
+        let formpoint = conn.endpoints[0].anchor.anchors.filter((point) => {
+          if (conn.endpoints[0].anchor.x === point.x) {
+            return true
+          } else {
+            return false
+          }
 
+        })
+        let topoint = conn.endpoints[1].anchor.anchors.filter((point) => {
+          if (conn.endpoints[1].anchor.x === point.x) {
+            return true
+          } else {
+            return false
+          }
+
+        })
+
+        return {
+          out: formpoint[0].type,
+          in: topoint[0].type,
+          from: conn.sourceId,
+          to: conn.targetId,
+          label: conn.getOverlay("myLabel") ? conn.getOverlay("myLabel").getLabel() : '',
+        }
+      })
+
+    this.saveChange(this, connectionsFromInstance);
+    console.log('dag', connectionsFromInstance)
+    console.log('dagline', this.instance.getConnections())
   }
   addEndpoints() {
     let nodes = this.store.getState().nodes;
@@ -203,14 +294,16 @@ export class DAG extends Component {
       let type = node.type;
       switch (type) {
         case 'source':
-          this.instance.addEndpoint(node.id, this.settings.source, { uuid: node.id });
+          this.instance.addEndpoint(node.id, this.settings.source, { uuid: 'out'+node.id });
           return;
         case 'sink':
-          this.instance.addEndpoint(node.id, this.settings.sink, { uuid: node.id });
+          this.instance.addEndpoint(node.id, this.settings.sink, { uuid: 'in'+node.id });
           return;
         default:
-          this.instance.addEndpoint(node.id, this.settings.transformSource, { uuid: `Left${node.id}` });
-          this.instance.addEndpoint(node.id, this.settings.transformSink, { uuid: `Right${node.id}` });
+          this.instance.addEndpoint(node.id, this.settings.transformSource, { uuid: `Right${node.id}` });
+          this.instance.addEndpoint(node.id, this.settings.transformSource, { uuid: `Bottom${node.id}` });
+          this.instance.addEndpoint(node.id, this.settings.transformSink, { uuid: `Left${node.id}` });
+          this.instance.addEndpoint(node.id, this.settings.transformSink, { uuid: `Top${node.id}` });
       }
     });
   }
@@ -225,7 +318,11 @@ export class DAG extends Component {
         // this.cleanUpGraph();
       }
     }, 600);
+
+
   }
+
+
   addNode(node) {
     let { type, label, style, name } = node;
     this.store.dispatch({
@@ -233,14 +330,17 @@ export class DAG extends Component {
       payload: {
         type,
         label,
-        style,
+        style: {
+          top: Math.round(parseInt(style.top) / 40) * 40 + 'px',
+          left: Math.round(parseInt(style.left) / 80) * 80 + 'px',
+        },
         name: name,
         id: type + Date.now().toString().slice(8)
       }
     });
   }
   removeConnection(sourceid, targetid) {
-     
+
     this.store.dispatch({
       type: 'REMOVE-CONNECTION',
       payload: {
@@ -250,7 +350,7 @@ export class DAG extends Component {
     });
   }
   addConnectionLable(sourceid, targetid, label) {
- 
+
     this.store.dispatch({
       type: 'SET-LABLE',
       payload: {
@@ -299,7 +399,39 @@ export class DAG extends Component {
       type: 'RESET'
     });
   }
+  openNode(e, id, label, type) {
+    //  console.log(dragEnd-dragStart)
+    if (id == '000000000' || id == '99999999' || id == '111111111' || id == '888888888') {
+      return
+    } else {
+      try {
+        if (dragEnd - dragStart < 150) {
+          dragEnd = '';
+          dragStart = '';
+          this.props.openmodes(e, id, label, type)
+        } else {
+          dragEnd = '';
+          dragStart = '';
+          // this.setState({show:true}) 
+        }
+
+      } catch (e) {
+        console.log(e)
+        console.log(this.state)
+        return;
+      }
+
+
+    }
+
+  }
+  openLine(e, type) {
+    this.props.openlines(e, type)
+
+  }
+
   render() {
+    //  console.log(this.state)
     const loadContent = () => {
       if (this.state.graph.loading) {
         return (
@@ -310,7 +442,7 @@ export class DAG extends Component {
     const loadNodes = () => {
       if (!this.state.graph.loading) {
         return (
-          <NodesList nodes={this.state.nodes} changeName={this.changeName} />
+          <NodesList nodes={this.state.nodes} changeName={this.changeName} openNode={this.openNode} />
         );
       }
     };
@@ -331,7 +463,9 @@ export class DAG extends Component {
       <my-dag id={this.state.componentId}>
         {this.props.children}
         <div className="diagram-container">
-          <div id="dag-container" style={getStyles()}>
+          <div id="dag-container" style={getStyles()}
+
+          >
             {loadContent()}
             {loadNodes()}
           </div>

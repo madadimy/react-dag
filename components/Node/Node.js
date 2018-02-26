@@ -1,13 +1,14 @@
 import React, { Component } from 'react';
 import classnames from 'classname';
-
+let num = 0;
+let timer = null;
 export default class Node extends Component {
   constructor(props) {
     super(props);
-    this.changename = this.changename.bind(this)
     this.inputOnBlur = this.inputOnBlur.bind(this)
     this.inpueOnChange = this.inpueOnChange.bind(this)
     this.changeCname = this.changeCname.bind(this)
+    this.showmenu=this.showmenu.bind(this)
     const { style, type, label, id, name } = props;
     this.state = {
       style,
@@ -27,11 +28,43 @@ export default class Node extends Component {
       id,
       name,
     });
+    // console.log('node',style)
+   
   }
-
-  changename() {
+ 
+  showmenu(e) {
+  // console.log('click')
+    //区分
+   clearTimeout(timer)
     
-    this.setState({ changN: true })
+    num++
+
+    
+    
+     try {
+       timer= setTimeout(() => {
+        if (num >= 2) {
+      
+          this.setState({ changN: true })
+          num=0
+        } if (num == 1) {
+      
+        num=0  
+        if (this.state.id === '000000000' || this.state.id === '99999999' || this.state.id === '111111111' || this.state.id === '888888888') {
+      return;
+        } else {
+           
+        this.props.openNode(e, this.state.id,this.state.label,'open')
+      
+    }  
+      }
+      
+    }, 300);
+    } catch (e) {
+       console.log(e)
+      console.log(num) 
+      return;
+    }
    
   }
   inputOnBlur() {
@@ -60,13 +93,19 @@ export default class Node extends Component {
     return name;
   }
   render() {
+    // console.log(this.state)
     const classN = this.changeCname()
     return (
       <DAG-Node>
         <div className="box text-center"
           id={this.state.id}
+          
           style={this.state.style}>
-          <div className={classnames({ 'dag-node': true, [classN]: true, [this.state.type]: true })}>
+          
+          <div className={classnames({ 'dag-node': true, [classN]: true, [this.state.type]: true })}
+            onClick={this.showmenu} 
+           
+          >
             {(() => {
               switch (this.state.label) {
                 case 'APP': return <span style={{ display: this.state.name ? 'none' : 'inline-block' }} className="ico-app"></span>;
@@ -77,7 +116,7 @@ export default class Node extends Component {
               }
             })()}
             &nbsp;
-            <span onDoubleClick={this.changename}
+            <span 
               style={{ display: this.state.changN ? 'none' : 'inline-block' }}
             >{this.state.name || this.state.label}</span>
             <input
@@ -93,8 +132,35 @@ export default class Node extends Component {
 
 
           </div>
-          {this.state.id === '000000000' || this.state.id === '99999999' || this.state.id === '111111111' || this.state.id === '888888888' ? ''
-            : <div className='controllers'><div className="label" label={this.state.label}>编辑</div><div className="deleteLabel" label={this.state.label}>删除</div></div>}
+          {/*{this.state.id === '000000000' || this.state.id === '99999999' || this.state.id === '111111111' || this.state.id === '888888888' ? ''
+            : <div className='controllers'><div className="label" label={this.state.label}>编辑</div>
+              <div className="deleteLabel" label={this.state.label}>删除</div></div>}*/}
+              {/*{this.state.id === '000000000' || this.state.id === '99999999' || this.state.id === '111111111' || this.state.id === '888888888' ? ''
+            : <div className='allnode' style={{
+            width: 80, height: 30, position: 'absolute',
+             top: -10, left: 10, paddingTop: 3, paddingLeft: 15,
+            zIndex:99,
+            display:  'none' 
+          }}>
+            <span className="ico-edit"
+              onClick={(e) => this.props.openNode(e, this.state.id,this.state.label,'open')}  
+            ></span>
+            <span className="ico-delete"
+              onClick={(e) => this.props.openNode(e, this.state.id,this.state.label,'del')}  
+            ></span>
+          </div>}*/}
+               {this.state.id === '000000000' || this.state.id === '99999999' || this.state.id === '111111111' || this.state.id === '888888888' ? ''
+            : <div className='allnode' style={{
+            width: 30, height: 16, position: 'absolute',
+             top: -2, right:-26,
+            zIndex:99,
+            display:  'none' 
+          }}>
+           
+            <span className="ico-deletered"
+              onClick={(e) => this.props.openNode(e, this.state.id,this.state.label,'del')}  
+            ></span>
+          </div>}
         </div>
       </DAG-Node>
     )
