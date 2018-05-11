@@ -22,19 +22,22 @@ my-dag {
   .diagram-container {
     position: relative;
     width: 100%;
-    height: 800px;
-    background: #eee;
+    height: 1000px;
+   
     overflow: hidden;
 
     #dag-container {
-      height: inherit;
-      width: inherit;
+      height: 50px;
+      width: 50px;
       position: absolute;
+      left: 0;
+      top: 0;
+      // background: #ccc;
       transform-origin: left center;
 
       .box {
         position: absolute;
-        width: 90px;
+        width: 100px;
         height: 50px;
         cursor: pointer;
         .jtk-connector { z-index:4; }
@@ -80,6 +83,9 @@ my-dag {
           //     color: #2da5e1;
           //   }
           // }
+          &.allnode{
+            display: inline-block;
+          }
           &.node-task {
             border: 2px solid #F8931F;
             ~.label {
@@ -136,4 +142,8 @@ my-dag {
     top: 50%;
     transform: translate(-50%, -50%);
   }
+  .div{position:absolute; border:1px dashed blue; width:0px; height:0px;left:0px; top:0px; overflow:hidden;}
+  .retc{position:absolute; border:1px solid #CCCCCC; overflow:hidden; background:#EFEFEF}
+  .jtk-endpoint-connected{z-index: 9999;}
+  
 }
