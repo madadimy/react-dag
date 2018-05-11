@@ -9,6 +9,7 @@ var jsPlumb = require('jsplumb');
 var classnames = require('classname');
 let dragStart = '';
 let dragEnd = '';
+let num = 0;
 export class DAG extends Component {
   constructor(props) {
     super(props);
@@ -17,6 +18,7 @@ export class DAG extends Component {
     this.changeLine = this.changeLine.bind(this);
     this.openLine = this.openLine.bind(this);
     this.openNode = this.openNode.bind(this);
+    this.renderGraph = this.renderGraph.bind(this);
     let { data, additionalReducersMap, enhancers = [], middlewares = [] } = props;
     this.store = configureStore(
       data,
@@ -36,12 +38,22 @@ export class DAG extends Component {
       this.settings = getSettings();
     }
     this.store.subscribe(() => {
-      this.setState(this.store.getState());
+      
+      if (this.state.graph.translate == this.store.getState().graph.translate) {
+          //  console.log('允许更新')
+           this.setState(this.store.getState());
+      } else {
+        console.log('阻止更新')
+         this.setState(this.store.getState());
+        return
+      }
+    
+     
       setTimeout(this.renderGraph.bind(this));
     });
 
     jsPlumb.ready(() => {
-      let that = this
+      let that = this 
       let dagSettings = this.settings.default;
       let container = document.querySelector(`${this.state.componentId} #dag-container`);
       jsPlumb.setContainer(container);
@@ -49,12 +61,11 @@ export class DAG extends Component {
       this.instance.bind('connection', this.makeConnections.bind(this));
       this.instance.bind('connectionDetached', this.makeConnections.bind(this));
       this.instance.bind('click', function (e) {
-
         that.openLine(e, 'open')
 
       })
       this.instance.bind('dblclick', function (e) {
-
+       
         that.openLine(e, 'del')
       })
       this.instance.bind('mouseover', function (e) {
@@ -79,6 +90,7 @@ export class DAG extends Component {
     });
   }
   renderGraph() {
+    // console.log('绘制dag')
     this.addEndpoints();
     this.makeNodesDraggable();
     this.renderConnections();
@@ -115,25 +127,41 @@ export class DAG extends Component {
     });
   }
   makeConnections(info, originalEvent) {
-
+    
 
     if (!originalEvent) { return; }
-    console.log('make', info, originalEvent)
-    console.log('make', info.sourceEndpoint.anchor)
-    let formpoint = info.sourceEndpoint.anchor.anchors.filter((point) => {
-      if (info.sourceEndpoint.anchor.x === point.x) {
-        return true
-      } else {
-        return false
+    // console.log('make', info, originalEvent)
+    // console.log('make', info.sourceEndpoint.anchor)
+    //静态兼容
+    let isstatic = this.props.settings.transformSource.anchors.length > 3 ? true:false;
+    //画线去重
+    let allstate = this.store.getState().connections;
+   // console.log('store', allstate)
+    for (let i = 0; i < allstate.length; i++) {
+      if (allstate[i].from == info.sourceId && allstate[i].to == info.targetId) {
+        //发现重复不再绘制
+        let connections = allstate
+       // 更新state 退出函数
+        this.store.dispatch({
+          type: 'SET-CONNECTIONS',
+          payload: {
+            connections
+          }
+        });
+        return
       }
+    }
 
-    })
-    // let topoint =info.targetEndpoint
-    console.log(formpoint)
     let connections = this.instance
       .getConnections()
       .map((conn) => {
-        let formpoint = conn.endpoints[0].anchor.anchors.filter((point) => {
+         let formpoint ;
+          let topoint ;
+        if (isstatic) {
+           formpoint = [{ type: 'Right' }];
+           topoint = [{ type: 'Left' }];
+        } else {
+           formpoint = conn.endpoints[0].anchor.anchors.filter((point) => {
           if (conn.endpoints[0].anchor.x === point.x) {
             return true
           } else {
@@ -141,7 +169,7 @@ export class DAG extends Component {
           }
 
         })
-        let topoint = conn.endpoints[1].anchor.anchors.filter((point) => {
+         topoint = conn.endpoints[1].anchor.anchors.filter((point) => {
           if (conn.endpoints[1].anchor.x === point.x) {
             return true
           } else {
@@ -149,7 +177,9 @@ export class DAG extends Component {
           }
 
         })
-        console.log(formpoint[0].type, topoint[0].type)
+        }
+       
+        // console.log(formpoint[0].type, topoint[0].type)
         return {
           out: formpoint[0].type,
           in: topoint[0].type,
@@ -158,7 +188,7 @@ export class DAG extends Component {
           label: conn.getOverlay("myLabel") ? conn.getOverlay("myLabel").getLabel() : '',
         }
       });
-    console.log('makeline', this.instance.getConnections()[0].endpoints[0].anchor)
+    // console.log('makeline', this.instance.getConnections()[0].endpoints[0].anchor)
 
     //send ajax when onConnect getEndpoint
     //this.saveChange(this, connections);
@@ -198,11 +228,15 @@ export class DAG extends Component {
       let data = obj.props.data;
       data.nodes = obj.store.getState().nodes;
       data.connections = connections;
+      data.graph = this.state.graph;
       obj.props.handleChange(data);
 
     }
   }
   renderConnections() {
+    
+   // console.log('settings', this.props.settings.transformSource.anchors.length);
+   
     let that = this;
     let connectionsFromInstance = this.instance
       .getConnections()
@@ -212,11 +246,12 @@ export class DAG extends Component {
       })
       );
     let { nodes, connections } = this.store.getState();
-    console.log('line', connections)
-    console.log('node', nodes)
+    // console.log('line', connections)
+    // console.log('node', nodes)
     if (connections.length === connectionsFromInstance.length) {
       //not connections  save node
       if (connections.length == 0) {
+       
         this.saveChange(this, []);
       }
       return;
@@ -228,25 +263,43 @@ export class DAG extends Component {
         var targetNode = nodes.find(node => node.id === connection.to);
         var label = connection.label ? connection.label : '';
         if (sourceNode && targetNode) {
-          var sourceId = sourceNode.type === 'transform' ? connection.out + connection.from :  'out'+connection.from;
-          var targetId = targetNode.type === 'transform' ? connection.in + connection.to : 'in'+connection.to;
+          if (connection.out) {
+            var sourceId = sourceNode.type === 'transform' ? connection.out + connection.from : 'out' + connection.from;
+          var targetId = targetNode.type === 'transform' ? connection.in + connection.to : 'in' + connection.to;
+          } else {
+            console.log('old line')  
+            var sourceId = sourceNode.type === 'transform' ? 'Right' + connection.from : 'out' + connection.from;
+          var targetId = targetNode.type === 'transform' ? 'Left' + connection.to : 'in' + connection.to;
+          }
+          
           var connObj = {
             uuids: [sourceId, targetId],
             detachable: true,
             overlays: [["Label", { label: label, location: 0.65, class: 'myLabel', id: 'myLabel' }]],
             hoverPaintStyle: { strokeStyle: "red" },
             paintStyle: { stroke: "blue", strokeWidth: 10 },
-            type: "foo"
+            type: "foo",
           };
           this.instance.connect(connObj);
 
 
         }
       });
+   
+    //
+    //静态兼容
+    let isstatic = this.props.settings.transformSource.anchors.length > 3 ? true:false;
+   
     connectionsFromInstance = this.instance
       .getConnections()
       .map((conn) => {
-        let formpoint = conn.endpoints[0].anchor.anchors.filter((point) => {
+         let formpoint ;
+          let topoint ;
+         if (isstatic) {
+           formpoint = [{ type: 'Right' }];
+           topoint = [{ type: 'Left' }];
+         } else {
+          formpoint = conn.endpoints[0].anchor.anchors.filter((point) => {
           if (conn.endpoints[0].anchor.x === point.x) {
             return true
           } else {
@@ -254,7 +307,7 @@ export class DAG extends Component {
           }
 
         })
-        let topoint = conn.endpoints[1].anchor.anchors.filter((point) => {
+        topoint = conn.endpoints[1].anchor.anchors.filter((point) => {
           if (conn.endpoints[1].anchor.x === point.x) {
             return true
           } else {
@@ -262,6 +315,9 @@ export class DAG extends Component {
           }
 
         })
+        }
+
+        
 
         return {
           out: formpoint[0].type,
@@ -271,10 +327,15 @@ export class DAG extends Component {
           label: conn.getOverlay("myLabel") ? conn.getOverlay("myLabel").getLabel() : '',
         }
       })
-
-    this.saveChange(this, connectionsFromInstance);
-    console.log('dag', connectionsFromInstance)
-    console.log('dagline', this.instance.getConnections())
+    //首次加载页面不保存数据
+   
+    num++;
+     if (num>2){
+         this.saveChange(this, connectionsFromInstance);
+    }
+ 
+   
+    
   }
   addEndpoints() {
     let nodes = this.store.getState().nodes;
@@ -294,16 +355,16 @@ export class DAG extends Component {
       let type = node.type;
       switch (type) {
         case 'source':
-          this.instance.addEndpoint(node.id, this.settings.source, { uuid: 'out'+node.id });
+          this.instance.addEndpoint(node.id, this.settings.source, { uuid: 'out' + node.id });
           return;
         case 'sink':
-          this.instance.addEndpoint(node.id, this.settings.sink, { uuid: 'in'+node.id });
+          this.instance.addEndpoint(node.id, this.settings.sink, { uuid: 'in' + node.id });
           return;
         default:
-          this.instance.addEndpoint(node.id, this.settings.transformSource, { uuid: `Right${node.id}` });
-          this.instance.addEndpoint(node.id, this.settings.transformSource, { uuid: `Bottom${node.id}` });
-          this.instance.addEndpoint(node.id, this.settings.transformSink, { uuid: `Left${node.id}` });
-          this.instance.addEndpoint(node.id, this.settings.transformSink, { uuid: `Top${node.id}` });
+          this.instance.addEndpoint(node.id, this.settings.transformSource, { uuid: `Bottom${node.id}` ,});
+          this.instance.addEndpoint(node.id, this.settings.transformSource, { uuid: `Right${node.id}`, });
+          this.instance.addEndpoint(node.id, this.settings.transformSink, { uuid: `Top${node.id}`, });
+          this.instance.addEndpoint(node.id, this.settings.transformSink, { uuid: `Left${node.id}`, });
       }
     });
   }
@@ -314,6 +375,7 @@ export class DAG extends Component {
     setTimeout(() => {
       this.toggleLoading(false);
       if (Object.keys(this.props.data || {}).length) {
+      // console.log('DidMount后加载数据')  
         this.renderGraph();
         // this.cleanUpGraph();
       }
@@ -321,7 +383,7 @@ export class DAG extends Component {
 
 
   }
-
+  
 
   addNode(node) {
     let { type, label, style, name } = node;
@@ -431,7 +493,6 @@ export class DAG extends Component {
   }
 
   render() {
-    //  console.log(this.state)
     const loadContent = () => {
       if (this.state.graph.loading) {
         return (
@@ -463,12 +524,12 @@ export class DAG extends Component {
       <my-dag id={this.state.componentId}>
         {this.props.children}
         <div className="diagram-container">
-          <div id="dag-container" style={getStyles()}
+          <div id="dag-container" style={getStyles()} 
 
           >
             {loadContent()}
             {loadNodes()}
-          </div>
+            </div>
         </div>
       </my-dag>
     );
